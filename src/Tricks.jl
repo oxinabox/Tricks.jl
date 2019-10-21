@@ -3,6 +3,8 @@ module Tricks
     using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
     using Base: CodeInfo
 
+    export static_hasmethod
+
     # This is used to create the CodeInfo returned by static_hasmethod.
     _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
     _hasmethod_true(@nospecialize(f), @nospecialize(t)) = true
