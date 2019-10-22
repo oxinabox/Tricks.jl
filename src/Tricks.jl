@@ -22,9 +22,9 @@ module Tricks
     """
     @generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
         # The signature type:
-        typ = rewrap_unionall(Tuple{f, unwrap_unionall(T).parameters...}, T)
         world = typemax(UInt)
-        method_doesnot_exist = ccall(:jl_gf_invoke_lookup, Any, (Any, UInt), typ, world) === nothing
+        method_insts = Core.Compiler.method_instances(f.instance, T, world)
+        method_doesnot_exist = isempty(method_insts)
         ret_func = method_doesnot_exist ? _hasmethod_false : _hasmethod_true
         ci_orig = uncompressed_ast(typeof(ret_func).name.mt.defs.func)
         ci = ccall(:jl_copy_code_info, Ref{CodeInfo}, (Any,), ci_orig)
@@ -33,7 +33,10 @@ module Tricks
         if method_doesnot_exist
             # No method so attach to method table
             mt = f.name.mt
+            typ = rewrap_unionall(Tuple{f, unwrap_unionall(T).parameters...}, T)
             ci.edges = Core.Compiler.vect(mt, typ)
+        else  # method exists, attach edges to all instances
+            ci.edges = method_insts
         end
         return ci
     end
