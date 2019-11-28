@@ -10,12 +10,6 @@
 
 Tricks.jl is an experimental package that does tricks with the with Julia edge system.
 
-It is presently unregistered. So install via
-```
-pkg> add https://github.com/oxinabox/Tricks.jl/
-```
-
-
 Currently it has 1 trick:
 `static_hasmethod`.
 This is like `hasmethod` but it does not trigger any dynamic lookup of the method table.
@@ -25,6 +19,7 @@ If methods are added, recompilation is triggered.
 This is based on https://github.com/JuliaLang/julia/pull/32732
 and that thread should be read before use.
 
+**If you can make a reproducable case of `static_hasmethod` not working please post in [#2](https://github.com/oxinabox/Tricks.jl/issues/2)**
 
 ### We can use this to declare traits.
 For demonstration we include versions based on static and nonstatic `has_method`.
