@@ -3,7 +3,7 @@ module Tricks
 using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
 using Base: CodeInfo
 
-export static_hasmethod
+export static_hasmethod, static_methods
 
 # This is used to create the CodeInfo returned by static_hasmethod.
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
@@ -40,5 +40,50 @@ _hasmethod_true(@nospecialize(f), @nospecialize(t)) = true
     end
     return ci
 end
+
+
+function expr_to_codeinfo(m, argnames, spnames, sp, e)
+    lam = Expr(:lambda, argnames,
+               Expr(Symbol("scope-block"),
+                    Expr(:block,
+                        Expr(:return,
+                            Expr(:block,
+                                e,
+                            )))))
+    ex = if spnames === nothing
+        lam
+    else
+        Expr(Symbol("with-static-parameters"), lam, spnames...)
+    end
+
+    # Get the code-info for the generatorbody in order to use it for generating a dummy
+    # code info object.
+    ci = ccall(:jl_expand, Any, (Any, Any), ex, m)
+end
+
+static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
+static_methods(@nospecialize(f) , @nospecialize(_T::Type)) = _static_methods(Main, f, _T)
+@generated function _static_methods(@nospecialize(m::Module), @nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+    world = typemax(UInt)
+    methods(f.instance)
+
+    ms = methods(f.instance, T)
+    ci = expr_to_codeinfo(m, [Symbol("#self#"), :m, :f, :_T], [:T], (:T,), :($ms))
+
+    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    method_doesnot_exist = isempty(method_insts)
+
+    mt = f.name.mt
+    # Now we add the edges so if a method is defined this recompiles
+    if method_doesnot_exist
+        # No method so attach to method table
+        mt = f.name.mt
+        ci.edges = Core.Compiler.vect(mt, (mt, Tuple{Vararg{Any}}))
+    else  # method exists, attach edges to all instances
+        ci.edges = method_insts
+    end
+    return ci
+end
+
 
 end
