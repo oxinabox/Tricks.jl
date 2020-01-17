@@ -54,4 +54,9 @@ end
     @test (length ∘ collect ∘ static_methods)(f) == 1
     f(::Int) = 1
     @test (length ∘ collect ∘ static_methods)(f) == 2
+
+    g(::Int) = 1
+    @test (length ∘ collect ∘ static_methods)(g) == 1
+    g(x) = x+1
+    @test (length ∘ collect ∘ static_methods)(g) == 2
 end

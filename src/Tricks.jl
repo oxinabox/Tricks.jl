@@ -10,16 +10,16 @@ _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
 _hasmethod_true(@nospecialize(f), @nospecialize(t)) = true
 
 """
-            static_hasmethod(f, type_tuple::Type{<:Tuple)
+    static_hasmethod(f, type_tuple::Type{<:Tuple)
 
-        Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
+Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
 
-        !!! Note
-            This absolutely must *not* be called dynamically. Else it will fail to update
-            when new methods are declared.
-            If you do not know how to ensure that it is not called dynamically,
-            do not use this.
-        """
+!!! Note
+    This absolutely must *not* be called dynamically. Else it will fail to update
+    when new methods are declared.
+    If you do not know how to ensure that it is not called dynamically,
+    do not use this.
+"""
 @generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
     # The signature type:
     world = typemax(UInt)
@@ -61,6 +61,18 @@ function expr_to_codeinfo(m, argnames, spnames, sp, e)
     ci = ccall(:jl_expand, Any, (Any, Any), ex, m)
 end
 
+
+"""
+    static_hasmethod(f, type_tuple::Type{<:Tuple)
+
+Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
+
+!!! Note
+    This absolutely must *not* be called dynamically. Else it will fail to update
+    when new methods are declared.
+    If you do not know how to ensure that it is not called dynamically,
+    do not use this.
+"""
 static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
 static_methods(@nospecialize(f) , @nospecialize(_T::Type)) = _static_methods(Main, f, _T)
 @generated function _static_methods(@nospecialize(m::Module), @nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
