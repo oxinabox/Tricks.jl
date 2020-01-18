@@ -87,13 +87,17 @@ static_methods(@nospecialize(f) , @nospecialize(_T::Type)) = _static_methods(Mai
 
     mt = f.name.mt
     # Now we add the edges so if a method is defined this recompiles
-    if method_doesnot_exist
-        # No method so attach to method table
-        mt = f.name.mt
-        ci.edges = Core.Compiler.vect(mt, (mt, Tuple{Vararg{Any}}))
-    else  # method exists, attach edges to all instances
-        ci.edges = method_insts
-    end
+
+
+    mt = f.name.mt
+    ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+    # if method_doesnot_exist
+    #     # No method so attach to method table
+    #     mt = f.name.mt
+    #     ci.edges = Core.Compiler.vect(mt, (mt, Tuple{Vararg{Any}}))
+    # else  # method exists, attach edges to all instances
+    #     ci.edges = method_insts
+    # end
     return ci
 end
 
