@@ -43,14 +43,13 @@ end
 
 
 
-function expr_to_codeinfo(argnames, spnames, sp, e)
+function create_codeinfo_with_returnvalue(argnames, spnames, sp, e)
     lam = Expr(:lambda, argnames,
                Expr(Symbol("scope-block"),
                     Expr(:block,
                         Expr(:return,
-                            Expr(:block,
                                 e,
-                            )))))
+                             ))))
     ex = if spnames === nothing
         lam
     else
@@ -77,12 +76,10 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     methods(f.instance)
 
     ms = methods(f.instance, T)
-    ci = expr_to_codeinfo([Symbol("#self#"), :f, :_T], [:T], (:T,), :($ms))
+    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($ms))
 
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
-    method_doesnot_exist = isempty(method_insts)
 
-    mt = f.name.mt
     # Now we add the edges so if a method is defined this recompiles
     mt = f.name.mt
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
