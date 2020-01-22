@@ -42,6 +42,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
 end
 
 
+
 function expr_to_codeinfo(argnames, spnames, sp, e)
     lam = Expr(:lambda, argnames,
                Expr(Symbol("scope-block"),
@@ -83,17 +84,8 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 
     mt = f.name.mt
     # Now we add the edges so if a method is defined this recompiles
-
-
     mt = f.name.mt
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
-    # if method_doesnot_exist
-    #     # No method so attach to method table
-    #     mt = f.name.mt
-    #     ci.edges = Core.Compiler.vect(mt, (mt, Tuple{Vararg{Any}}))
-    # else  # method exists, attach edges to all instances
-    #     ci.edges = method_insts
-    # end
     return ci
 end
 
