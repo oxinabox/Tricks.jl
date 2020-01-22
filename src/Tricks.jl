@@ -80,7 +80,6 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     ci = expr_to_codeinfo([Symbol("#self#"), :f, :_T], [:T], (:T,), :($ms))
 
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
-    method_doesnot_exist = isempty(method_insts)
 
     mt = f.name.mt
     # Now we add the edges so if a method is defined this recompiles
