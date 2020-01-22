@@ -48,6 +48,11 @@ struct Foo end
     end
 end
 
+module Bar
+h(::Int) = 1
+
+end
+using .Bar
 
 @testset "static_methods" begin
     f(x) = x + 1
@@ -59,4 +64,8 @@ end
     @test (length ∘ collect ∘ static_methods)(g) == 1
     g(x) = x+1
     @test (length ∘ collect ∘ static_methods)(g) == 2
+
+    @test (length ∘ collect ∘ static_methods)(Bar.h) == 1
+    Bar.h(x) = x
+    @test (length ∘ collect ∘ static_methods)(Bar.h) == 2
 end

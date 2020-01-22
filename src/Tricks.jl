@@ -42,7 +42,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
 end
 
 
-function expr_to_codeinfo(m, argnames, spnames, sp, e)
+function expr_to_codeinfo(argnames, spnames, sp, e)
     lam = Expr(:lambda, argnames,
                Expr(Symbol("scope-block"),
                     Expr(:block,
@@ -55,17 +55,14 @@ function expr_to_codeinfo(m, argnames, spnames, sp, e)
     else
         Expr(Symbol("with-static-parameters"), lam, spnames...)
     end
-
-    # Get the code-info for the generatorbody in order to use it for generating a dummy
-    # code info object.
-    ci = ccall(:jl_expand, Any, (Any, Any), ex, m)
+    ci = ccall(:jl_expand, Any, (Any, Any), ex, @__MODULE__)
 end
 
-
 """
-    static_hasmethod(f, type_tuple::Type{<:Tuple)
+    static_methods(f, [type_tuple::Type{<:Tuple])
+static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
 
-Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
+Like `methods` but runs at compile-time (and does not accept a worldage argument).
 
 !!! Note
     This absolutely must *not* be called dynamically. Else it will fail to update
@@ -73,14 +70,13 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     If you do not know how to ensure that it is not called dynamically,
     do not use this.
 """
-static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
-static_methods(@nospecialize(f) , @nospecialize(_T::Type)) = _static_methods(Main, f, _T)
-@generated function _static_methods(@nospecialize(m::Module), @nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
+@generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
     world = typemax(UInt)
     methods(f.instance)
 
     ms = methods(f.instance, T)
-    ci = expr_to_codeinfo(m, [Symbol("#self#"), :m, :f, :_T], [:T], (:T,), :($ms))
+    ci = expr_to_codeinfo([Symbol("#self#"), :f, :_T], [:T], (:T,), :($ms))
 
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
     method_doesnot_exist = isempty(method_insts)
