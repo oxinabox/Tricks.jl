@@ -47,3 +47,25 @@ struct Foo end
         @test iterableness_static(Foo) === NonIterable()
     end
 end
+
+module Bar
+h(::Int) = 1
+
+end
+using .Bar
+
+@testset "static_methods" begin
+    f(x) = x + 1
+    @test (length ∘ collect ∘ static_methods)(f) == 1
+    f(::Int) = 1
+    @test (length ∘ collect ∘ static_methods)(f) == 2
+
+    g(::Int) = 1
+    @test (length ∘ collect ∘ static_methods)(g) == 1
+    g(x) = x+1
+    @test (length ∘ collect ∘ static_methods)(g) == 2
+
+    @test (length ∘ collect ∘ static_methods)(Bar.h) == 1
+    Bar.h(x) = x
+    @test (length ∘ collect ∘ static_methods)(Bar.h) == 2
+end
