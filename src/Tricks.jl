@@ -43,24 +43,25 @@ end
 
 
 
-function create_codeinfo_with_returnvalue(argnames, spnames, sp, e)
-    lam = Expr(:lambda, argnames,
-               Expr(Symbol("scope-block"),
-                    Expr(:block,
-                        Expr(:return,
-                                e,
-                             ))))
-    ex = if spnames === nothing
-        lam
-    else
-        Expr(Symbol("with-static-parameters"), lam, spnames...)
+function create_codeinfo_with_returnvalue(argnames, spnames, sp, value)
+    expr = Expr(:lambda,
+        argnames,
+        Expr(Symbol("scope-block"),
+            Expr(:block,
+                Expr(:return, value),
+            )
+        )
+    )
+    if spnames !== nothing
+        expr = Expr(Symbol("with-static-parameters"), expr, spnames...)
     end
-    ci = ccall(:jl_expand, Any, (Any, Any), ex, @__MODULE__)
+    ci = ccall(:jl_expand, Any, (Any, Any), expr, @__MODULE__)
+    return ci
 end
 
 """
     static_methods(f, [type_tuple::Type{<:Tuple])
-static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
+    static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
 
 Like `methods` but runs at compile-time (and does not accept a worldage argument).
 
@@ -72,19 +73,12 @@ Like `methods` but runs at compile-time (and does not accept a worldage argument
 """
 static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 @generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    world = typemax(UInt)
-    methods(f.instance)
-
-    ms = methods(f.instance, T)
-    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($ms))
-
-    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    list_of_methods = methods(f.instance, T)
+    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
     # Now we add the edges so if a method is defined this recompiles
     mt = f.name.mt
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
     return ci
 end
-
-
-end
+end  # module
