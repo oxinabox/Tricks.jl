@@ -7,14 +7,19 @@ iterableness_static(::Type{T}) where T = static_hasmethod(iterate, Tuple{T}) ? I
 
 struct Foo end
 
+# if code has no calls then it must be fully static
+has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
+
 @testset "static_hasmethod" begin
     @testset "positive: $(typeof(data))" for data in (
         "abc", [1,2,3], (2,3), ones(4,10,2), 'a',  1:100
     )
         T = typeof(data)
         @test iterableness_static(T) === Iterable()
-        code_typed_ir = (@code_typed iterableness_static(T))[1].code
-        @test code_typed_ir == [:(return $(QuoteNode(Iterable())))]
+        code_typed = (@code_typed iterableness_static(T))
+
+        @test code_typed[2] === Iterable  # return type
+        @test has_no_calls(code_typed[1].code)
     end
 
     @testset "negative: $(typeof(data))" for data in (
@@ -23,8 +28,9 @@ struct Foo end
         T = typeof(data)
         @test iterableness_static(T) === NonIterable()
         code_typed = (@code_typed iterableness_static(T))
+
         @test code_typed[2] === NonIterable  # return type
-        @test length(code_typed[1].code) <= 3  # currently has dead conditions on statements 1 and 2, but LLVM removed them.
+        @test has_no_calls(code_typed[1].code)
     end
 
     @testset "add method" begin
@@ -55,6 +61,7 @@ end
 using .Bar
 
 @testset "static_methods" begin
+    # behavour
     f(x) = x + 1
     @test (length ∘ collect ∘ static_methods)(f) == 1
     f(::Int) = 1
@@ -68,4 +75,9 @@ using .Bar
     @test (length ∘ collect ∘ static_methods)(Bar.h) == 1
     Bar.h(x) = x
     @test (length ∘ collect ∘ static_methods)(Bar.h) == 2
+
+    # Code Generation
+    code_typed = (@code_typed static_methods(f))
+    @test code_typed[2] === Base.MethodList  # return type
+    @test has_no_calls(code_typed[1].code)
 end
