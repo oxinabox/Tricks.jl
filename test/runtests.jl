@@ -52,6 +52,15 @@ has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
 
         @test iterableness_static(Foo) === NonIterable()
     end
+
+
+    @testset "abstrct type args" begin
+        # https://github.com/oxinabox/Tricks.jl/issues/14
+
+        goo(x::Integer) = 1
+        @assert !hasmethod(goo, Tuple{Real})  # the behavour we want to match
+        @test !static_hasmethod(goo, Tuple{Real})
+    end
 end
 
 module Bar
