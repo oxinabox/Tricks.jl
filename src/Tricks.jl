@@ -20,9 +20,9 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
 
     ftype = Tuple{f, T.parameters...}
-    dispatch_able_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
+    covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
 
-    method_doesnot_exist = isempty(dispatch_able_method_insts)
+    method_doesnot_exist = isempty(covering_method_insts)
     ret_func = method_doesnot_exist ? _hasmethod_false : _hasmethod_true
     ci_orig = uncompressed_ast(typeof(ret_func).name.mt.defs.func)
     ci = ccall(:jl_copy_code_info, Ref{CodeInfo}, (Any,), ci_orig)
