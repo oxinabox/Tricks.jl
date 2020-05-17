@@ -34,7 +34,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
         typ = rewrap_unionall(Tuple{f, unwrap_unionall(T).parameters...}, T)
         ci.edges = Core.Compiler.vect(mt, typ)
     else  # method exists, attach edges to all instances
-        ci.edges = method_insts
+        ci.edges = covering_method_insts
     end
     return ci
 end
