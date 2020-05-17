@@ -54,12 +54,16 @@ has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
     end
 
 
-    @testset "abstrct type args" begin
+    @testset "abstract type args" begin
         # https://github.com/oxinabox/Tricks.jl/issues/14
 
         goo(x::Integer) = 1
-        @assert !hasmethod(goo, Tuple{Real})  # the behavour we want to match
+        @assert !hasmethod(goo, Tuple{Real})  # the behaviour we want to match
         @test !static_hasmethod(goo, Tuple{Real})
+
+        goo(x::Number) = 2
+        @assert hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
+        @test static_hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
     end
 end
 

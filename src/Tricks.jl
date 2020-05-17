@@ -19,7 +19,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     world = typemax(UInt)
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
 
-    ftype = Tuple{f, T.parameters...}
+    ftype = Tuple{f, fieldtypes(T)...}
     covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
 
     method_doesnot_exist = isempty(covering_method_insts)
