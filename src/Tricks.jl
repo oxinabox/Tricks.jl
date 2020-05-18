@@ -18,7 +18,11 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     # The signature type:
     world = typemax(UInt)
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
-    method_doesnot_exist = isempty(method_insts)
+
+    ftype = Tuple{f, fieldtypes(T)...}
+    covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
+
+    method_doesnot_exist = isempty(covering_method_insts)
     ret_func = method_doesnot_exist ? _hasmethod_false : _hasmethod_true
     ci_orig = uncompressed_ast(typeof(ret_func).name.mt.defs.func)
     ci = ccall(:jl_copy_code_info, Ref{CodeInfo}, (Any,), ci_orig)
@@ -30,7 +34,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
         typ = rewrap_unionall(Tuple{f, unwrap_unionall(T).parameters...}, T)
         ci.edges = Core.Compiler.vect(mt, typ)
     else  # method exists, attach edges to all instances
-        ci.edges = method_insts
+        ci.edges = covering_method_insts
     end
     return ci
 end
