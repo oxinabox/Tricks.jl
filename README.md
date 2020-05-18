@@ -29,7 +29,7 @@ This is just like `methods`, but again it doesn't trigger any dynamic lookup of 
 ## Uses
 ### We can use `static_hasmethod` to declare traits.
 For demonstration we include versions based on static and nonstatic `has_method`.
-```
+```jl
 julia> using Tricks: static_hasmethod
 
 julia> struct Iterable end; struct NonIterable end;
@@ -42,7 +42,7 @@ iterableness_static (generic function with 1 method)
 ```
 
 ### Demo: 
-```
+```jl
 julia> using BenchmarkTools
 
 julia> const examples =  (:a, "abc", [1,2,3], rand, (2,3), ones(4,10,2), 'a',  1:100);
@@ -76,7 +76,7 @@ So it is over 20x faster.
 
 this is because doesn't generate any code that has to run at runtime:
 (i.e. it is not dynamic)
-```
+```jl
 julia> @code_typed iterableness_static(String)
 CodeInfo(
 1 ─     return $(QuoteNode(Iterable()))
@@ -94,7 +94,7 @@ CodeInfo(
 ```
 
 ### Demonstration of it updating:
-```
+```jl
 julia> struct Foo end
 
 julia> iterableness_static(Foo)
@@ -103,7 +103,7 @@ NonIterable()
 Initially, it wasn't iterable,
 but now we will add the iteration methods to it:
 
-```
+```jl
 julia> Base.iterate(::Foo) = ("Foo", nothing);
 
 julia> Base.iterate(::Foo, ::Nothing) = nothing;
