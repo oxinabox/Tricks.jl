@@ -3,7 +3,7 @@ module Tricks
 using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
 using Base: CodeInfo
 
-export static_hasmethod, static_methods
+export static_hasmethod, static_methods, compat_hasmethod
 
 # This is used to create the CodeInfo returned by static_hasmethod.
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
@@ -79,4 +79,11 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
     return ci
 end
+            
+@static if VERSION < v"1.3"
+    const compat_hasmethod = hasmethod
+else
+    const compat_hasmethod = static_hasmethod
+end
+            
 end  # module
