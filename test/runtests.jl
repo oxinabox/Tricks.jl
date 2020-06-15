@@ -10,7 +10,7 @@ struct Foo end
 # if code has no calls then it must be fully static
 has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
 
-@testset "static_hasmethod" begin
+VERSION >= v"1.3" && @testset "static_hasmethod" begin
     @testset "positive: $(typeof(data))" for data in (
         "abc", [1,2,3], (2,3), ones(4,10,2), 'a',  1:100
     )
@@ -65,13 +65,13 @@ has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
         @assert hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
         @test static_hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
     end
+end
 
-    @testset "compat_hasmethod" begin
-        @static if VERSION < v"1.3"
-            @test compat_hasmethod == hasmethod
-        else
-            @test compat_hasmethod == static_hasmethod
-        end
+@testset "compat_hasmethod" begin
+    @static if VERSION < v"1.3"
+        @test compat_hasmethod == hasmethod
+    else
+        @test compat_hasmethod == static_hasmethod
     end
 end
 
@@ -81,7 +81,7 @@ h(::Int) = 1
 end
 using .Bar
 
-@testset "static_methods" begin
+VERSION >= v"1.3" @testset "static_methods" begin
     # behavour
     f(x) = x + 1
     @test (length ∘ collect ∘ static_methods)(f) == 1
