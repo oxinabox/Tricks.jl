@@ -21,6 +21,9 @@ This is based on https://github.com/JuliaLang/julia/pull/32732 and that thread s
 **If you can make a reproducible case of `static_hasmethod` not working please post in [#2](https://github.com/oxinabox/Tricks.jl/issues/2).**  
 I think it can't actually happen, and can't actually be called dynamically in a way that breaks it.
 
+There is also a compatibility version of this function called `compat_hasmethod`, which picks between `static_hasmethod` or `hasmethod` depending on the Julia version.
+Use this method inside your package to be compatible with `VERSION < v"1.3"`
+
 ## `static_methods`
 This is just like `methods`, but again it doesn't trigger any dynamic lookup of the method tables.
 
@@ -41,7 +44,7 @@ julia> iterableness_static(::Type{T}) where T = static_hasmethod(iterate, Tuple{
 iterableness_static (generic function with 1 method)
 ```
 
-### Demo: 
+### Demo:
 ```jl
 julia> using BenchmarkTools
 
@@ -117,5 +120,3 @@ julia> collect(Foo())
 julia> iterableness_static(Foo)
 Iterable()
 ```
-
-
