@@ -65,6 +65,14 @@ has_no_calls(ir) = all(stmt->!Meta.isexpr(stmt, :call), ir)
         @assert hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
         @test static_hasmethod(goo, Tuple{Real})   # Now it _is_ covered.
     end
+
+    @testset "compat_hasmethod" begin
+        @static if VERSION < v"1.3"
+            @test compat_hasmethod == hasmethod
+        else
+            @test compat_hasmethod == static_hasmethod
+        end
+    end
 end
 
 module Bar
