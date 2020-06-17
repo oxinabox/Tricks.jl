@@ -81,7 +81,7 @@ h(::Int) = 1
 end
 using .Bar
 
-VERSION >= v"1.3" @testset "static_methods" begin
+VERSION >= v"1.3" && @testset "static_methods" begin
     # behavour
     f(x) = x + 1
     @test (length ∘ collect ∘ static_methods)(f) == 1
