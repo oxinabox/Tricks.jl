@@ -102,3 +102,12 @@ VERSION >= v"1.3" && @testset "static_methods" begin
     @test code_typed[2] === Base.MethodList  # return type
     @test has_no_calls(code_typed[1].code)
 end
+
+
+@testset "static_fieldnames" begin
+    function foo(data)
+        names = static_fieldnames(typeof(data))
+        map(name -> getproperty(data, name), names)
+    end
+    @test (@inferred foo(:a => 1)) === (:a, 1)
+end

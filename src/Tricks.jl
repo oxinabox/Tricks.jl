@@ -3,7 +3,7 @@ module Tricks
 using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
 using Base: CodeInfo
 
-export static_hasmethod, static_methods, compat_hasmethod
+export static_hasmethod, static_methods, compat_hasmethod, static_fieldnames 
 
 # This is used to create the CodeInfo returned by static_hasmethod.
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
@@ -85,5 +85,10 @@ end
 else
     const compat_hasmethod = static_hasmethod
 end
-            
+
+Base.@pure function static_fieldnames(t::DataType)
+    Base.fieldnames(t)
+end
+
+
 end  # module
