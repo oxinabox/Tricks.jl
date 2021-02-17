@@ -109,5 +109,6 @@ end
         names = static_fieldnames(typeof(data))
         map(name -> getproperty(data, name), names)
     end
-    @test (@inferred foo(:a => 1)) === (:a, 1)
+    @test (@inferred foo(:a => 1)) == (:a, 1)
+
 end
