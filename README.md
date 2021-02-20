@@ -10,7 +10,7 @@
 
 Tricks.jl is an experimental package that does tricks with the Julia edge system.
 
-Currently it has 2 tricks:
+Currently it has the following tricks:
 ## `static_hasmethod`.
 This is like `hasmethod` but it does not trigger any dynamic lookup of the method table.
 It just returns the constant `true` or `false`.
@@ -25,6 +25,11 @@ I think it can't actually happen, and can't actually be called dynamically in a 
 This is just like `methods`, but again it doesn't trigger any dynamic lookup of the method tables.
 
 **If you can make a reproducible case of `static_methods` not working please [open an issue](https://github.com/oxinabox/Tricks.jl/issues/).**  
+
+## `static_fieldnames`, `static_fieldtypes`, `static_fieldcount`
+Just like `Base.fieldnames` `Base.fieldtypes`, and `Base.fieldcount` but will participate in constant
+propagation and will be free of runtime dynamism.
+
 
 ## Uses
 ### We can use `static_hasmethod` to declare traits.
