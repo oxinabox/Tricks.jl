@@ -104,11 +104,16 @@ VERSION >= v"1.3" && @testset "static_methods" begin
 end
 
 
-@testset "static_fieldnames" begin
+@testset "static_field____" begin
     function foo(data)
         names = static_fieldnames(typeof(data))
         map(name -> getproperty(data, name), names)
     end
     @test (@inferred foo(:a => 1)) == (:a, 1)
 
+    bar(::Type{T}) where {T} = Val{static_fieldcount(T)}()
+    @test @inferred(bar(Complex{Int})) == Val(2)
+
+    baz(::Type{T}) where {T} = static_fieldtypes(T)
+    @test @inferred(baz(Complex{Int})) == (Int, Int)
 end
