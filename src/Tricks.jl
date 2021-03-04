@@ -62,12 +62,6 @@ end
     static_methods(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
 
 Like `methods` but runs at compile-time (and does not accept a worldage argument).
-
-!!! Note
-    This absolutely must *not* be called dynamically. Else it will fail to update
-    when new methods are declared.
-    If you do not know how to ensure that it is not called dynamically,
-    do not use this.
 """
 static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 @generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
