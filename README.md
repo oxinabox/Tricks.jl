@@ -8,7 +8,7 @@
 [![Codecov](https://codecov.io/gh/oxinabox/Tricks.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/oxinabox/Tricks.jl)
 [![Build Status](https://api.cirrus-ci.com/github/oxinabox/Tricks.jl.svg)](https://cirrus-ci.com/github/oxinabox/Tricks.jl)
 
-Tricks.jl is an experimental package that does tricks with the Julia edge system.
+Tricks.jl is an particularly ~evil~ cunning package that does tricks with the Julia edge system.
 
 Currently it has the following tricks:
 ### `static_hasmethod`.
