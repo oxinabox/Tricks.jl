@@ -16,8 +16,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
 """
 @generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
     # The signature type:
-    world = typemax(UInt)
-    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    method_insts = _method_instances(f, T)
 
     ftype = Tuple{f, fieldtypes(T)...}
     covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
@@ -65,7 +64,7 @@ Like `methods` but runs at compile-time (and does not accept a worldage argument
 """
 static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 @generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    list_of_methods = methods(f.instance, T)
+    list_of_methods = _methods(f, T)
     ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
     # Now we add the edges so if a method is defined this recompiles
@@ -73,7 +72,7 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
     return ci
 end
-            
+
 @static if VERSION < v"1.3"
     const compat_hasmethod = hasmethod
 else
@@ -83,5 +82,33 @@ end
 Base.@pure static_fieldnames(t::Type) = Base.fieldnames(t)
 Base.@pure static_fieldtypes(t::Type) = Base.fieldtypes(t)
 Base.@pure static_fieldcount(t::Type) = Base.fieldcount(t)
+
+
+# Like Base.methods, but accepts f as a _type_ instead of an instance.
+function _methods(@nospecialize(f_type), @nospecialize(t_type),
+                 mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing)
+    tt = _combine_signature_type(f_type, t_type)
+    lim, world = -1, typemax(UInt)
+    ms = Base.Method[
+        m.method
+        for m::Core.MethodMatch in Core.Compiler._methods_by_ftype(tt, lim, world)::Vector
+        if (mod === nothing || m.method.module ∈ mod)
+    ]
+    return Base.MethodList(ms, f_type.name.mt)
+end
+# Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
+function _method_instances(@nospecialize(f_type), @nospecialize(t_type))
+    tt = _combine_signature_type(f_type, t_type)
+    lim, world = -1, typemax(UInt)
+    return Core.MethodInstance[
+        Core.Compiler.specialize_method(match)
+        for match in Core.Compiler._methods_by_ftype(tt, lim, world)::Vector
+    ]
+end
+# Like Base.signature_type, but starts with a type for f_type already.
+function _combine_signature_type(@nospecialize(f_type::Type), @nospecialize(args::Type))
+    u = unwrap_unionall(args)
+    return rewrap_unionall(Tuple{f_type, u.parameters...}, args)
+end
 
 end  # module
