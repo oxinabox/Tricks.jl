@@ -103,6 +103,38 @@ VERSION >= v"1.3" && @testset "static_methods" begin
     @test has_no_calls(code_typed[1].code)
 end
 
+VERSION >= v"1.3" && @testset "closures" begin
+    make_add_n(n) = x->x+n
+    func = make_add_n(2)
+
+    # Add a 0-arg method:
+    (::typeof(func))() = func(0)
+
+    @assert func(1) == 3
+    @assert func() == 2
+
+    @testset "static_hasmethod" begin
+        @assert hasmethod(func, Tuple{Int}) == true
+        @test static_hasmethod(func, Tuple{Int}) == true
+
+        @assert hasmethod(func, Tuple{}) == true
+        @test static_hasmethod(func, Tuple{}) == true
+    end
+
+    @testset "static_methods" begin
+        @test collect(methods(func, Tuple{Int})) ==
+                collect(static_methods(func, Tuple{Int}))
+        @test length(static_methods(func, Tuple{Int})) == 1
+
+        @test collect(methods(func, Tuple{})) ==
+                collect(static_methods(func, Tuple{}))
+        @test length(static_methods(func, Tuple{})) == 1
+
+        @test collect(methods(func, Tuple{Int,Int,Int})) ==
+                collect(static_methods(func, Tuple{Int,Int,Int}))
+        @test length(static_methods(func, Tuple{Int,Int,Int})) == 0
+    end
+end
 
 @testset "static_field____" begin
     function foo(data)
