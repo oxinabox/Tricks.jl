@@ -84,6 +84,10 @@ Base.@pure static_fieldtypes(t::Type) = Base.fieldtypes(t)
 Base.@pure static_fieldcount(t::Type) = Base.fieldcount(t)
 
 
+# The below methods are copied and adapted from Julia Base:
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L952-L966
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L893-L896
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L1047-L1055
 # Like Base.methods, but accepts f as a _type_ instead of an instance.
 function _methods(@nospecialize(f_type), @nospecialize(t_type),
                  mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing)
