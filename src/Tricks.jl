@@ -89,21 +89,17 @@ function _methods(@nospecialize(f_type), @nospecialize(t_type),
                  mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing)
     tt = _combine_signature_type(f_type, t_type)
     lim, world = -1, typemax(UInt)
-    ms = Base.Method[
-        m.method
-        for m::Core.MethodMatch in Core.Compiler._methods_by_ftype(tt, lim, world)::Vector
-        if (mod === nothing || m.method.module ∈ mod)
-    ]
+    mft = Core.Compiler._methods_by_ftype(tt, lim, world)
+    ms = Base.Method[m.method for m in mft if (mod === nothing || m.method.module ∈ mod)]
     return Base.MethodList(ms, f_type.name.mt)
 end
 # Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
 function _method_instances(@nospecialize(f_type), @nospecialize(t_type))
     tt = _combine_signature_type(f_type, t_type)
     lim, world = -1, typemax(UInt)
-    return Core.MethodInstance[
-        Core.Compiler.specialize_method(match)
-        for match in Core.Compiler._methods_by_ftype(tt, lim, world)::Vector
-    ]
+    sm = Core.Compiler.specialize_method
+    mft = Core.Compiler._methods_by_ftype(tt, lim, world)
+    return Core.MethodInstance[sm(match) for match in mft]
 end
 # Like Base.signature_type, but starts with a type for f_type already.
 function _combine_signature_type(@nospecialize(f_type::Type), @nospecialize(args::Type))
