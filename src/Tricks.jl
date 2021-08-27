@@ -94,21 +94,36 @@ function _methods(@nospecialize(f_type), @nospecialize(t_type),
     tt = _combine_signature_type(f_type, t_type)
     lim, world = -1, typemax(UInt)
     mft = Core.Compiler._methods_by_ftype(tt, lim, world)
-    ms = Base.Method[m.method for m in mft if (mod === nothing || m.method.module ∈ mod)]
+    ms = Base.Method[_get_method(m) for m in mft if (mod === nothing || m.method.module ∈ mod)]
     return Base.MethodList(ms, f_type.name.mt)
 end
 # Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
 function _method_instances(@nospecialize(f_type), @nospecialize(t_type))
     tt = _combine_signature_type(f_type, t_type)
     lim, world = -1, typemax(UInt)
-    sm = Core.Compiler.specialize_method
     mft = Core.Compiler._methods_by_ftype(tt, lim, world)
-    return Core.MethodInstance[sm(match) for match in mft]
+    return Core.MethodInstance[_specialize_method(match) for match in mft]
 end
 # Like Base.signature_type, but starts with a type for f_type already.
 function _combine_signature_type(@nospecialize(f_type::Type), @nospecialize(args::Type))
     u = unwrap_unionall(args)
     return rewrap_unionall(Tuple{f_type, u.parameters...}, args)
+end
+# MethodMatch is only defined in v1.6+, so the values returned from _methods_by_ftype need
+# a bit of massaging here.
+if VERSION < v"1.6"
+    # _methods_by_ftype returns a triple
+    _get_method((mtypes, msp, method)) = method
+    # Core.Compiler.specialize_method(::MethodMatch) is only defined on v1.6+
+    function _specialize_method(method_data)
+        mtypes, msp, m = method_data
+        instance = ccall(:jl_specializations_get_linfo, Ref{Core.MethodInstance}, (Any, Any, Any), m, mtypes, msp)
+        return instance
+    end
+else
+    # _methods_by_ftype returns a MethodMatch
+    _get_method(method_match) = method_match.method
+    _specialize_method = Core.Compiler.specialize_method
 end
 
 end  # module
