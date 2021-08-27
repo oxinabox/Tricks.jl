@@ -3,7 +3,8 @@ module Tricks
 using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
 using Base: CodeInfo
 
-export static_hasmethod, static_methods, compat_hasmethod, static_fieldnames, static_fieldcount, static_fieldtypes
+export static_hasmethod, static_methods, static_method_count, compat_hasmethod,
+        static_fieldnames, static_fieldcount, static_fieldtypes
 
 # This is used to create the CodeInfo returned by static_hasmethod.
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
@@ -73,7 +74,23 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
     return ci
 end
-            
+
+"""
+    static_method_count(f, [type_tuple::Type{<:Tuple])
+    static_method_count(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
+Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a worldage argument).
+"""
+static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
+@generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+    method_count = length(methods(f.instance, T))
+    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
+
+    # Now we add the edges so if a method is defined this recompiles
+    mt = f.name.mt
+    ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+    return ci
+end
+
 @static if VERSION < v"1.3"
     const compat_hasmethod = hasmethod
 else
