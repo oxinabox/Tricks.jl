@@ -101,6 +101,22 @@ VERSION >= v"1.3" && @testset "static_methods" begin
     code_typed = (@code_typed static_methods(f))
     @test code_typed[2] === Base.MethodList  # return type
     @test has_no_calls(code_typed[1].code)
+
+    @testset "delete method" begin
+        i(::Int) = 1
+        @test (length ∘ collect ∘ static_methods)(i) == 1
+        i(x) = x+1
+        @test (length ∘ collect ∘ static_methods)(i) == 2
+
+        Base.delete_method((first ∘ methods)(i))
+        @test (length ∘ collect ∘ static_methods)(i) == 1
+
+        Base.delete_method((first ∘ methods)(i))
+        @test (length ∘ collect ∘ static_methods)(i) == 0
+
+        i(x) = x+1
+        @test (length ∘ collect ∘ static_methods)(i) == 1
+    end
 end
 
 

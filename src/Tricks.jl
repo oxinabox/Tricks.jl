@@ -70,10 +70,20 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 
     # Now we add the edges so if a method is defined this recompiles
     mt = f.name.mt
-    ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+    mt_edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+
+    world = typemax(UInt)
+    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    # TODO: UGH except this actually *doesn't work* with Tuple{Vararg{Any}}.... So currently
+    #       we are over-subscribing to invalidations, but that's better than incorrectness.
+    # ftype = Tuple{f, T.parameters...}
+    # covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
+    covering_method_insts = method_insts
+
+    ci.edges = [mt_edges..., covering_method_insts...]
     return ci
 end
-            
+
 @static if VERSION < v"1.3"
     const compat_hasmethod = hasmethod
 else
