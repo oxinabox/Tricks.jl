@@ -119,6 +119,32 @@ VERSION >= v"1.3" && @testset "static_methods" begin
     end
 end
 
+# Redefine module Bar
+module Bar
+h(::Int) = 1
+end
+VERSION >= v"1.3" && @testset "static_method_count" begin
+    # behavour
+    f(x) = x + 1
+    @test static_method_count(f) == 1
+    f(::Int) = 1
+    @test static_method_count(f) == 2
+
+    g(::Int) = 1
+    @test static_method_count(g) == 1
+    g(x) = x+1
+    @test static_method_count(g) == 2
+
+    @test static_method_count(Bar.h) == 1
+    Bar.h(x) = x
+    @test static_method_count(Bar.h) == 2
+
+    # Code Generation
+    code_typed = (@code_typed static_method_count(f))
+    @test code_typed[2] === Int  # return type
+    @test has_no_calls(code_typed[1].code)
+end
+
 
 @testset "static_field____" begin
     function foo(data)
