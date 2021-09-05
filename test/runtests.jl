@@ -118,6 +118,53 @@ VERSION >= v"1.3" && @testset "static_methods" begin
         @test (length ∘ collect ∘ static_methods)(i) == 1
     end
 end
+@testset "type signatures" begin
+    j(x) = x
+    j(x, y, z...) = x + y + length(y)
+    @test (length ∘ collect ∘ static_methods)(j) == 2
+    @test static_method_count(j) == 2
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int}) == 1
+    @test static_method_count(j, Tuple{Int,Int}) == 1
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int}) == 1
+    @test static_method_count(j, Tuple{Int,Int}) == 1
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int,Int}) == 1
+    @test static_method_count(j, Tuple{Int,Int,Int}) == 1
+
+    # Varargs
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int, Int, Vararg{Int}}) == 1
+    @test static_method_count(j, Tuple{Int, Int, Vararg{Int}}) == 1
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Vararg{Int}}) == 2
+    @test static_method_count(j, Tuple{Vararg{Int}}) == 2
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Any, Vararg{Int}}) == 2
+    @test static_method_count(j, Tuple{Any, Vararg{Int}}) == 2
+
+    j(x, y::Int, z...) = x + y + length(y)
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int, Int, Vararg{Int}}) == 1
+    @test static_method_count(j, Tuple{Int, Int, Vararg{Int}}) == 1
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Int, Any, Vararg{Int}}) == 2
+    @test static_method_count(j, Tuple{Int, Any, Vararg{Int}}) == 2
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Vararg{Any}}) == 3
+    @test static_method_count(j, Tuple{Vararg{Any}}) == 3
+
+    @test (length ∘ collect ∘ static_methods)(j, Tuple{Any, Vararg{Any}}) == 3
+    @test static_method_count(j, Tuple{Any, Vararg{Any}}) == 3
+
+    @testset "delete method" begin
+
+        while length(collect(methods(j))) > 0
+            Base.delete_method((first ∘ methods)(j))
+
+            T = Tuple{Any, Vararg{Any}}
+            @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
+            @test static_method_count(j, T) == length(collect(methods(j)))
+        end
+    end
+end
 
 # Redefine module Bar
 module Bar
