@@ -87,7 +87,7 @@ function _method_table_all_edges_all_methods(f, T)
     method_insts = Core.Compiler.method_instances(f.instance, T, world)
     covering_method_insts = method_insts
 
-    return [mt_edges..., covering_method_insts...]
+    return vcat(mt_edges, covering_method_insts)
 end
 
 """
