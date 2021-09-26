@@ -17,8 +17,7 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
 """
 @generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
     # The signature type:
-    world = typemax(UInt)
-    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    method_insts = _method_instances(f, T)
 
     ftype = Tuple{f, fieldtypes(T)...}
     covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
@@ -66,7 +65,7 @@ Like `methods` but runs at compile-time (and does not accept a worldage argument
 """
 static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
 @generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    list_of_methods = methods(f.instance, T)
+    list_of_methods = _methods(f, T)
     ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
     # Now we add the edges so if a method is defined this recompiles
@@ -84,7 +83,7 @@ function _method_table_all_edges_all_methods(f, T)
     # We want to add an edge to _every existing method instance_, so that
     # the deletion of any one of them will trigger recompilation of the function.
     world = typemax(UInt)
-    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    method_insts = _method_instances(f, T)
     covering_method_insts = method_insts
 
     return vcat(mt_edges, covering_method_insts)
@@ -97,7 +96,7 @@ Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a
 """
 static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
 @generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    method_count = length(methods(f.instance, T))
+    method_count = length(_methods(f, T))
     ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
 
     # Now we add the edges so if a method is defined this recompiles
@@ -114,5 +113,48 @@ end
 Base.@pure static_fieldnames(t::Type) = Base.fieldnames(t)
 Base.@pure static_fieldtypes(t::Type) = Base.fieldtypes(t)
 Base.@pure static_fieldcount(t::Type) = Base.fieldcount(t)
+
+
+# The below methods are copied and adapted from Julia Base:
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L952-L966
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L893-L896
+# - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L1047-L1055
+# Like Base.methods, but accepts f as a _type_ instead of an instance.
+function _methods(@nospecialize(f_type), @nospecialize(t_type),
+                 mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing)
+    tt = _combine_signature_type(f_type, t_type)
+    lim, world = -1, typemax(UInt)
+    mft = Core.Compiler._methods_by_ftype(tt, lim, world)
+    ms = Base.Method[_get_method(m) for m in mft if (mod === nothing || m.method.module ∈ mod)]
+    return Base.MethodList(ms, f_type.name.mt)
+end
+# Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
+function _method_instances(@nospecialize(f_type), @nospecialize(t_type))
+    tt = _combine_signature_type(f_type, t_type)
+    lim, world = -1, typemax(UInt)
+    mft = Core.Compiler._methods_by_ftype(tt, lim, world)
+    return Core.MethodInstance[_specialize_method(match) for match in mft]
+end
+# Like Base.signature_type, but starts with a type for f_type already.
+function _combine_signature_type(@nospecialize(f_type::Type), @nospecialize(args::Type))
+    u = unwrap_unionall(args)
+    return rewrap_unionall(Tuple{f_type, u.parameters...}, args)
+end
+# MethodMatch is only defined in v1.6+, so the values returned from _methods_by_ftype need
+# a bit of massaging here.
+if VERSION < v"1.6"
+    # _methods_by_ftype returns a triple
+    _get_method((mtypes, msp, method)) = method
+    # Core.Compiler.specialize_method(::MethodMatch) is only defined on v1.6+
+    function _specialize_method(method_data)
+        mtypes, msp, m = method_data
+        instance = ccall(:jl_specializations_get_linfo, Ref{Core.MethodInstance}, (Any, Any, Any), m, mtypes, msp)
+        return instance
+    end
+else
+    # _methods_by_ftype returns a MethodMatch
+    _get_method(method_match) = method_match.method
+    _specialize_method = Core.Compiler.specialize_method
+end
 
 end  # module
