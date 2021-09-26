@@ -3,7 +3,8 @@ module Tricks
 using Base: rewrap_unionall, unwrap_unionall, uncompressed_ast
 using Base: CodeInfo
 
-export static_hasmethod, static_methods, compat_hasmethod, static_fieldnames, static_fieldcount, static_fieldtypes
+export static_hasmethod, static_methods, static_method_count, compat_hasmethod,
+        static_fieldnames, static_fieldcount, static_fieldtypes
 
 # This is used to create the CodeInfo returned by static_hasmethod.
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
@@ -68,8 +69,38 @@ static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
     ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
     # Now we add the edges so if a method is defined this recompiles
+    ci.edges = _method_table_all_edges_all_methods(f, T)
+    return ci
+end
+
+function _method_table_all_edges_all_methods(f, T)
     mt = f.name.mt
-    ci.edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+
+    # We add an edge to the MethodTable itself so that when any new methods
+    # are defined, it recompiles the function.
+    mt_edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+
+    # We want to add an edge to _every existing method instance_, so that
+    # the deletion of any one of them will trigger recompilation of the function.
+    world = typemax(UInt)
+    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    covering_method_insts = method_insts
+
+    return vcat(mt_edges, covering_method_insts)
+end
+
+"""
+    static_method_count(f, [type_tuple::Type{<:Tuple])
+    static_method_count(@nospecialize(f)) = _static_methods(Main, f, Tuple{Vararg{Any}})
+Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a worldage argument).
+"""
+static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
+@generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+    method_count = length(methods(f.instance, T))
+    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
+
+    # Now we add the edges so if a method is defined this recompiles
+    ci.edges = _method_table_all_edges_all_methods(f, T)
     return ci
 end
 
