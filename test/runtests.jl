@@ -239,6 +239,17 @@ VERSION >= v"1.3" && @testset "closures" begin
                 collect(static_methods(func, Tuple{Int,Int,Int}))
         @test length(static_methods(func, Tuple{Int,Int,Int})) == 0
     end
+
+    @testset "static_method_count" begin
+        @test length(collect(methods(func, Tuple{Int}))) ==
+                static_method_count(func, Tuple{Int}) == 1
+
+        @test length(collect(methods(func, Tuple{}))) ==
+                static_method_count(func, Tuple{}) == 1
+
+        @test length(collect(methods(func, Tuple{Int,Int,Int}))) ==
+                static_method_count(func, Tuple{Int,Int,Int}) == 0
+    end
 end
 
 @testset "static_field____" begin

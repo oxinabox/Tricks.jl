@@ -83,7 +83,7 @@ function _method_table_all_edges_all_methods(f, T)
     # We want to add an edge to _every existing method instance_, so that
     # the deletion of any one of them will trigger recompilation of the function.
     world = typemax(UInt)
-    method_insts = Core.Compiler.method_instances(f.instance, T, world)
+    method_insts = _method_instances(f, T)
     covering_method_insts = method_insts
 
     return vcat(mt_edges, covering_method_insts)
@@ -96,7 +96,7 @@ Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a
 """
 static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
 @generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    method_count = length(methods(f.instance, T))
+    method_count = length(_methods(f, T))
     ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
 
     # Now we add the edges so if a method is defined this recompiles
