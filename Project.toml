@@ -1,7 +1,7 @@
 name = "Tricks"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
 authors = ["Lyndon White"]
-version = "0.1.5"
+version = "0.1.6"
 
 [compat]
 julia = "1.0"
