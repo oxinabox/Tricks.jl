@@ -3,10 +3,7 @@
 [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://oxinabox.github.io/Tricks.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://oxinabox.github.io/Tricks.jl/dev)
 -->
-[![Build Status](https://travis-ci.com/oxinabox/Tricks.jl.svg?branch=master)](https://travis-ci.com/oxinabox/Tricks.jl)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/oxinabox/Tricks.jl?svg=true)](https://ci.appveyor.com/project/oxinabox/Tricks-jl)
 [![Codecov](https://codecov.io/gh/oxinabox/Tricks.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/oxinabox/Tricks.jl)
-[![Build Status](https://api.cirrus-ci.com/github/oxinabox/Tricks.jl.svg)](https://cirrus-ci.com/github/oxinabox/Tricks.jl)
 
 Tricks.jl is an particularly ~evil~ cunning package that does tricks with the Julia edge system.
 
@@ -15,8 +12,6 @@ Currently it has the following tricks:
 This is like `hasmethod` but it does not trigger any dynamic lookup of the method table.
 It just returns the constant `true` or `false`.
 If methods are added, recompilation is triggered.
-
-This is based on https://github.com/JuliaLang/julia/pull/32732 and that thread should be read before use.
 
 **If you can make a reproducible case of `static_hasmethod` not working please post in [#2](https://github.com/oxinabox/Tricks.jl/issues/2).**  
 I think it can't actually happen, and can't actually be called dynamically in a way that breaks it.
