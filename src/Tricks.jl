@@ -15,12 +15,19 @@ _hasmethod_true(@nospecialize(f), @nospecialize(t)) = true
 
 Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
 """
-@generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
+@generated function static_hasmethod(
+    @nospecialize(f),
+    @nospecialize(t::Type{T}),
+    @nospecialize(kwnames_type_tuple::Type{<:Tuple})=Type{Tuple{}},
+    ) where {T<:Tuple}
     # The signature type:
     method_insts = _method_instances(f, T)
 
     ftype = Tuple{f, fieldtypes(T)...}
-    covering_method_insts = [mi for mi in method_insts if ftype <: mi.def.sig]
+    kwnames = only(kwnames_type_tuple.parameters).parameters
+    covering_method_insts = filter(method_insts) do mi
+        ftype <: mi.def.sig && has_kwargs(mi.def, kwnames)
+    end
 
     method_doesnot_exist = isempty(covering_method_insts)
     ret_func = method_doesnot_exist ? _hasmethod_false : _hasmethod_true
@@ -39,6 +46,21 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     return ci
 end
 
+"checks if the method `m` accepts keyword arguments with the names `kwnames`"
+function has_kwargs(m::Method, kwnames)
+    isempty(kwnames) && return true  # no kwargs means any method matches
+
+    mt = Base.get_methodtable(m)
+    !isdefined(mt, :kwsorter) && return false  # no kwsorter means no keywords for sure.
+
+    kws = Base.kwarg_decl(m, typeof(mt.kwsorter))
+    isempty(kws) && return false  # no keyword args means doesn't accept these
+
+    # if accepts kwargs... then definately accepts these names
+    endswith(string(kws[end]), "...") && return true
+
+    return kwnames ⊆ kws
+end
 
 
 function create_codeinfo_with_returnvalue(argnames, spnames, sp, value)
