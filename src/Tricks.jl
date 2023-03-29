@@ -10,12 +10,8 @@ export static_hasmethod, static_methods, static_method_count, compat_hasmethod,
 _hasmethod_false(@nospecialize(f), @nospecialize(t)) = false
 _hasmethod_true(@nospecialize(f), @nospecialize(t)) = true
 
-"""
-    static_hasmethod(f, type_tuple::Type{<:Tuple)
 
-Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
-"""
-@generated function static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
+@generated function _static_hasmethod(@nospecialize(f), @nospecialize(t::Type{T}),) where {T<:Tuple}
     # The signature type:
     method_insts = _method_instances(f, T)
 
@@ -39,7 +35,17 @@ Like `hasmethod` but runs at compile-time (and does not accept a worldage argume
     return ci
 end
 
+"""
+    static_hasmethod(f, type_tuple::Type{<:Tuple)
 
+Like `hasmethod` but runs at compile-time (and does not accept a worldage argument).
+"""
+const static_hasmethod = if VERSION >= v"1.10.0-DEV.609"
+    # Feature is now part of julia itself
+    hasmethod
+else
+    _static_hasmethod
+end
 
 function create_codeinfo_with_returnvalue(argnames, spnames, sp, value)
     expr = Expr(:lambda,
@@ -63,14 +69,19 @@ end
 
 Like `methods` but runs at compile-time (and does not accept a worldage argument).
 """
-static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
-@generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    list_of_methods = _methods(f, T)
-    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
+const static_methods = if VERSION >= v"1.10.0-DEV.609"
+    # feature is now built in
+    methods
+else
+    _static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
+    @generated function _static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        list_of_methods = _methods(f, T)
+        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
-    # Now we add the edges so if a method is defined this recompiles
-    ci.edges = _method_table_all_edges_all_methods(f, T)
-    return ci
+        # Now we add the edges so if a method is defined this recompiles
+        ci.edges = _method_table_all_edges_all_methods(f, T)
+        return ci
+    end
 end
 
 function _method_table_all_edges_all_methods(f, T)
@@ -95,13 +106,20 @@ end
 Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a worldage argument).
 """
 static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
-@generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-    method_count = length(_methods(f, T))
-    ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
+if VERSION >= v"1.10.0-DEV.609"
+    # feature is now built in
+    function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        return length(methods(f, _T))
+    end
+else
+    @generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        method_count = length(_methods(f, T))
+        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
 
-    # Now we add the edges so if a method is defined this recompiles
-    ci.edges = _method_table_all_edges_all_methods(f, T)
-    return ci
+        # Now we add the edges so if a method is defined this recompiles
+        ci.edges = _method_table_all_edges_all_methods(f, T)
+        return ci
+    end
 end
 
 @static if VERSION < v"1.3"

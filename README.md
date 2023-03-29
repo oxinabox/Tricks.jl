@@ -5,6 +5,14 @@
 -->
 [![Codecov](https://codecov.io/gh/oxinabox/Tricks.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/oxinabox/Tricks.jl)
 
+
+| ⚠️ Notice ⚠️ |
+| --- |
+| **Tricks.jl is not required post-Julia v1.10.0-DEV.609 |
+| as the features of running `methods` etc at compile-time are now built into the language. |
+| It can still be used for compatibility with older versions of the language. |
+
+
 Tricks.jl is an particularly ~evil~ cunning package that does tricks with the Julia edge system.
 
 Currently it has the following tricks:
