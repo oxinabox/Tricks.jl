@@ -8,8 +8,8 @@
 
 | ⚠️ Notice ⚠️ |
 | --- |
-| **Tricks.jl is not required post-Julia v1.10.0-DEV.609 |
-| as the features of running `methods` etc at compile-time are now built into the language. |
+| **Tricks.jl is not required post-Julia v1.10.0-DEV.609. |
+|The features of running `methods` etc at compile-time are now built into the language. |
 | It can still be used for compatibility with older versions of the language. |
 
 
