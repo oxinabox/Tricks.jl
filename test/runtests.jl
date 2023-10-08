@@ -189,13 +189,7 @@ VERSION >= v"1.3" && @testset "static_method_count" begin
     # Code Generation
     code_typed = (@code_typed static_method_count(f))
     @test code_typed[2] === Int  # return type
-
-    if VERSION < v"1.10.0-DEV.609"
-        @test has_no_calls(code_typed[1].code)
-    else
-        # Actually does have calls on new version, because `methods` isn't constant folded right now
-        @test_broken has_no_calls(code_typed[1].code)
-    end
+    @test has_no_calls(code_typed[1].code)
 
     @testset "delete method" begin
         i(::Int) = 1
