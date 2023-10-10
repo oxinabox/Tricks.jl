@@ -69,22 +69,33 @@ end
 
 Like `methods` but runs at compile-time (and does not accept a worldage argument).
 """
-const static_methods = if VERSION >= v"1.10.0-DEV.609"
-    # feature is now built in
-    methods
-else
-    _static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
-    @generated function _static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-        list_of_methods = _methods(f, T)
+static_methods(@nospecialize(f)) = static_methods(f, Tuple{Vararg{Any}})
+if VERSION >= v"1.10.0-DEV.609"
+    function __static_methods(world, source, T, self, f, _T)
+        list_of_methods = _methods(f, T, nothing, world)
         ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
 
         # Now we add the edges so if a method is defined this recompiles
-        ci.edges = _method_table_all_edges_all_methods(f, T)
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
+        return ci
+    end
+    @eval function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        $(Expr(:meta, :generated, __static_methods))
+        $(Expr(:meta, :generated_only))
+    end
+else
+    @generated function static_methods(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        world = typemax(UInt)
+        list_of_methods = _methods(f, T, nothing, world)
+        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($list_of_methods))
+
+        # Now we add the edges so if a method is defined this recompiles
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
         return ci
     end
 end
 
-function _method_table_all_edges_all_methods(f, T)
+function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counter())
     mt = f.name.mt
 
     # We add an edge to the MethodTable itself so that when any new methods
@@ -93,8 +104,7 @@ function _method_table_all_edges_all_methods(f, T)
 
     # We want to add an edge to _every existing method instance_, so that
     # the deletion of any one of them will trigger recompilation of the function.
-    world = typemax(UInt)
-    method_insts = _method_instances(f, T)
+    method_insts = _method_instances(f, T, world)
     covering_method_insts = method_insts
 
     return vcat(mt_edges, covering_method_insts)
@@ -107,17 +117,26 @@ Returns `length(methods(f, tt))` but runs at compile-time (and does not accept a
 """
 static_method_count(@nospecialize(f)) = static_method_count(f, Tuple{Vararg{Any}})
 if VERSION >= v"1.10.0-DEV.609"
-    # feature is now built in
-    function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-        return length(methods(f, _T))
-    end
-else
-    @generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
-        method_count = length(_methods(f, T))
+    function __static_method_count(world, source, T, self, f, _T)
+        method_count = length(_methods(f, T, nothing, world))
         ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
 
         # Now we add the edges so if a method is defined this recompiles
-        ci.edges = _method_table_all_edges_all_methods(f, T)
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
+        return ci
+    end
+    @eval function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        $(Expr(:meta, :generated, __static_method_count))
+        $(Expr(:meta, :generated_only))
+    end
+else
+    @generated function static_method_count(@nospecialize(f) , @nospecialize(_T::Type{T})) where {T <: Tuple}
+        world = typemax(UInt)
+        method_count = length(_methods(f, T, nothing, world))
+        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T], [:T], (:T,), :($method_count))
+
+        # Now we add the edges so if a method is defined this recompiles
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
         return ci
     end
 end
@@ -139,19 +158,28 @@ Base.@pure static_fieldcount(t::Type) = Base.fieldcount(t)
 # - https://github.com/JuliaLang/julia/blob/4931faa34a8a1c98b39fb52ed4eb277729120128/base/reflection.jl#L1047-L1055
 # Like Base.methods, but accepts f as a _type_ instead of an instance.
 function _methods(@nospecialize(f_type), @nospecialize(t_type),
-                 mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing)
+                  mod::Union{Tuple{Module},AbstractArray{Module},Nothing}=nothing, world = Base.get_world_counter())
     tt = _combine_signature_type(f_type, t_type)
-    lim, world = -1, typemax(UInt)
+    lim = -1
     mft = Core.Compiler._methods_by_ftype(tt, lim, world)
-    ms = Base.Method[_get_method(m) for m in mft if (mod === nothing || m.method.module ∈ mod)]
+    if mft === nothing
+        ms = Base.Method[]
+    else
+        ms = Base.Method[_get_method(m) for m in mft if (mod === nothing || m.method.module ∈ mod)]
+    end
     return Base.MethodList(ms, f_type.name.mt)
 end
+
 # Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
-function _method_instances(@nospecialize(f_type), @nospecialize(t_type))
+function _method_instances(@nospecialize(f_type), @nospecialize(t_type), world = Base.get_world_counter())
     tt = _combine_signature_type(f_type, t_type)
-    lim, world = -1, typemax(UInt)
+    lim = -1
     mft = Core.Compiler._methods_by_ftype(tt, lim, world)
-    return Core.MethodInstance[_specialize_method(match) for match in mft]
+    if mft === nothing
+        return Core.MethodInstance[]
+    else
+        return Core.MethodInstance[_specialize_method(match) for match in mft]
+    end
 end
 # Like Base.signature_type, but starts with a type for f_type already.
 function _combine_signature_type(@nospecialize(f_type::Type), @nospecialize(args::Type))
