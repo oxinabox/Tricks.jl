@@ -6,11 +6,12 @@
 [![Codecov](https://codecov.io/gh/oxinabox/Tricks.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/oxinabox/Tricks.jl)
 
 
-| ⚠️ Notice ⚠️ |
-| --- |
-| **Tricks.jl** is not required post-Julia v1.10.0-DEV.609. |
-|The features of running `hasmethod` at compile-time are now built into the language. |
-| It can still be used for compatibility with older versions of the language. |
+> ## ⚠️ Notice ⚠️
+>
+> `Tricks.static_hasmethod` is not required post-Julia v1.10.0-DEV.609.
+> The features of running `hasmethod` at compile-time are now built into the language. 
+> `static_hasmethod` can still be used for compatibility with older versions of the language, and
+> the other static functions provided by Tricks.jl continue to be useful.
 
 
 Tricks.jl is an particularly ~evil~ cunning package that does tricks with the Julia edge system.
@@ -32,7 +33,6 @@ This is just like `methods`, but again it doesn't trigger any dynamic lookup of 
 ### `static_fieldnames`, `static_fieldtypes`, `static_fieldcount`
 Just like `Base.fieldnames` `Base.fieldtypes`, and `Base.fieldcount` but will participate in constant
 propagation and will be free of runtime dynamism.
-
 
 ## Uses
 ### We can use `static_hasmethod` to declare traits.
