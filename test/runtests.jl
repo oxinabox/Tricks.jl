@@ -206,6 +206,72 @@ VERSION >= v"1.3" && @testset "static_method_count" begin
         i(x) = x+1
         @test static_method_count(i) == 1
     end
+
+    @testset "parametric struct" begin
+        struct Baz{T}; x::T end
+        @test static_method_count(Baz) == 1
+        @test static_method_count(Baz{Int}) == 1
+        @test static_method_count(Baz{Tuple}) == 1
+
+
+        Baz(x::Int) = Baz(x)
+        @test static_method_count(Baz) == 2
+        Baz{Float64}(x::Int, y::Int) = Baz(x/y)
+        @test static_method_count(Baz{Float64}) == 2
+
+        Base.delete_method((first ∘ methods)(Baz))
+        @test static_method_count(Baz) == 1
+        Base.delete_method((first ∘ methods)(Baz{Float64}))
+        @test static_method_count(Baz{Float64}) == 1
+
+        Base.delete_method((first ∘ methods)(Baz))
+        @test static_method_count(Baz) == 0
+        Base.delete_method((first ∘ methods)(Baz{Float64}))
+        @test static_method_count(Baz{Float64}) == 0
+
+        Baz(x::Int) = Baz(x)
+        @test static_method_count(Baz) == 1
+        Baz{Float64}(x::Int, y::Int) = Baz(x/y)
+        @test static_method_count(Baz{Float64}) == 1
+    end
+
+    @testset "Tuple" begin
+        # julia> methods(Base.Tuple)
+        # # 6 methods for type constructor:
+        #  [1] Tuple(index::CartesianIndex)
+        #      @ Base.IteratorsMD multidimensional.jl:103
+        #  [2] Tuple(nt::NamedTuple)
+        #      @ Base namedtuple.jl:197
+        #  [3] Tuple(x::Array{T, 0}) where T
+        #      @ Base tuple.jl:389
+        #  [4] Tuple(x::Ref)
+        #      @ Base tuple.jl:388
+        #  [5] (::Type{T})(x::Tuple) where T<:Tuple
+        #      @ Base tuple.jl:386
+        #  [6] (::Type{T})(itr) where T<:Tuple
+        #      @ Base tuple.jl:391
+        default_method_count = static_method_count(Base.Tuple)
+        Base.Tuple(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z) = 1
+        # julia> methods(Base.Tuple)
+        # # 8 methods for type constructor:
+        #  [1] Tuple(index::CartesianIndex)
+        #      @ Base.IteratorsMD multidimensional.jl:103
+        #  [2] Tuple(x::Array{T, 0}) where T
+        #      @ Base tuple.jl:389
+        #  [3] Tuple(x::Ref)
+        #      @ Base tuple.jl:388
+        #  [4] (::Type{T})(x::Tuple) where T<:Tuple
+        #      @ Base tuple.jl:386
+        #  [5] Tuple(nt::NamedTuple)
+        #      @ Base namedtuple.jl:197
+        #  [6] (::Type{T})(nt::NamedTuple) where T<:Tuple
+        #      @ Base namedtuple.jl:198
+        #  [7] Tuple(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z)
+        #      @ Main REPL[5]:1
+        #  [8] (::Type{T})(itr) where T<:Tuple
+        #      @ Base tuple.jl:391
+        @test static_method_count(Base.Tuple) == default_method_count + 2
+    end
 end
 
 VERSION >= v"1.3" && @testset "closures" begin
