@@ -206,6 +206,34 @@ VERSION >= v"1.3" && @testset "static_method_count" begin
         i(x) = x+1
         @test static_method_count(i) == 1
     end
+
+    @testset "parametric struct" begin
+        struct Baz{T}; x::T end
+        @test static_method_count(Baz) == 1
+        @test static_method_count(Baz{Int}) == 1
+        @test static_method_count(Baz{Tuple}) == 1
+
+
+        Baz(x::Int) = Baz(x)
+        @test static_method_count(Baz) == 2
+        Baz{Float64}(x::Int, y::Int) = Baz(x/y)
+        @test static_method_count(Baz{Float64}) == 2
+
+        Base.delete_method((first ∘ methods)(Baz))
+        @test static_method_count(Baz) == 1
+        Base.delete_method((first ∘ methods)(Baz{Float64}))
+        @test static_method_count(Baz{Float64}) == 1
+
+        Base.delete_method((first ∘ methods)(Baz))
+        @test static_method_count(Baz) == 0
+        Base.delete_method((first ∘ methods)(Baz{Float64}))
+        @test static_method_count(Baz{Float64}) == 0
+
+        Baz(x::Int) = Baz(x)
+        @test static_method_count(Baz) == 1
+        Baz{Float64}(x::Int, y::Int) = Baz(x/y)
+        @test static_method_count(Baz{Float64}) == 1
+    end
 end
 
 VERSION >= v"1.3" && @testset "closures" begin

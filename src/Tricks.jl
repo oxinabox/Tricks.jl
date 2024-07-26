@@ -100,7 +100,7 @@ function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counte
 
     # We add an edge to the MethodTable itself so that when any new methods
     # are defined, it recompiles the function.
-    mt_edges = Core.Compiler.vect(mt, Tuple{Vararg{Any}})
+    mt_edges = Core.Compiler.vect(mt, Tuple{f,Vararg{Any}})
 
     # We want to add an edge to _every existing method instance_, so that
     # the deletion of any one of them will trigger recompilation of the function.
