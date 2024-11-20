@@ -158,10 +158,11 @@ end
 
         while length(collect(methods(j))) > 0
             Base.delete_method((first ∘ methods)(j))
-
-            T = Tuple{Any, Vararg{Any}}
-            @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
-            @test static_method_count(j, T) == length(collect(methods(j)))
+            invokelatest() do
+                T = Tuple{Any, Vararg{Any}}
+                @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
+                @test static_method_count(j, T) == length(collect(methods(j)))
+            end
         end
     end
 end
