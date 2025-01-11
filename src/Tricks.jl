@@ -100,7 +100,7 @@ function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counte
 
     # We add an edge to the MethodTable itself so that when any new methods
     # are defined, it recompiles the function.
-    @static if VERSION < v"1.12.0-DEV"
+    @static if VERSION < v"1.12.0-DEV.1531"
         mt_edges = Core.Compiler.vect(mt, Tuple{f,Vararg{Any}})
     else
         mt_edges = Core.Compiler.vect(Tuple{f, Vararg{Any}}, mt)
