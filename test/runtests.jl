@@ -125,7 +125,7 @@ end
     @test static_method_count(j) == 2
 
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int}) == 1
-    @test static_method_count(j, Tuple{Int,Int}) == 1
+    @test static_method_count(j, Tuple{Int}) == 1
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int}) == 1
     @test static_method_count(j, Tuple{Int,Int}) == 1
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int,Int}) == 1
@@ -156,13 +156,23 @@ end
 
     @testset "delete method" begin
 
-        while length(collect(methods(j))) > 0
-            Base.delete_method((first ∘ methods)(j))
+        # while length(collect(methods(j))) > 0
+        #     Base.delete_method((first ∘ methods)(j))
 
-            T = Tuple{Any, Vararg{Any}}
-            @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
-            @test static_method_count(j, T) == length(collect(methods(j)))
-        end
+        #     T = Tuple{Any, Vararg{Any}}
+        #     @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
+        #     @test static_method_count(j, T) == length(collect(methods(j)))
+        # end
+        # Base.delete_method does not trigger recompilation in the loop
+        @label deletion_loop
+        length(collect(methods(j))) > 0 || @goto deletion_loop_end
+        Base.delete_method((first ∘ methods)(j))
+
+        T = Tuple{Any, Vararg{Any}}
+        @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
+        @test static_method_count(j, T) == length(collect(methods(j)))
+        @goto deletion_loop
+        @label deletion_loop_end
     end
 end
 
