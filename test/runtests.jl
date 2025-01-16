@@ -125,7 +125,7 @@ end
     @test static_method_count(j) == 2
 
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int}) == 1
-    @test static_method_count(j, Tuple{Int,Int}) == 1
+    @test static_method_count(j, Tuple{Int}) == 1
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int}) == 1
     @test static_method_count(j, Tuple{Int,Int}) == 1
     @test (length ∘ collect ∘ static_methods)(j, Tuple{Int,Int,Int}) == 1
@@ -158,7 +158,7 @@ end
 
         while length(collect(methods(j))) > 0
             Base.delete_method((first ∘ methods)(j))
-
+            @static isdefined(Core, Symbol("@latestworld")) && Core.@latestworld
             T = Tuple{Any, Vararg{Any}}
             @test (length ∘ collect ∘ static_methods)(j, T) == length(collect(methods(j)))
             @test static_method_count(j, T) == length(collect(methods(j)))
