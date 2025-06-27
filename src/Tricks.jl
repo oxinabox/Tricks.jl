@@ -190,9 +190,9 @@ static_which(@nospecialize(f)) = static_which(f, Tuple{Vararg{Any}})
         else
             matched_method = match.method
         end
-        
+        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T, :throw_error], [:T], (:T,), :($matched_method))        
         # Now we add the edges so if a method is defined this recompiles
-        ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T, :throw_error], [:T], (:T,), :($matched_method))
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
         return ci
     end
     @eval function static_which(@nospecialize(f) , @nospecialize(_T::Type{T}) , @nospecialize(throw_error::Union{Val{true}, Val{false}}=Val(false))) where {T <: Tuple}
@@ -214,6 +214,7 @@ else
             matched_method = match.method
         end
         ci = create_codeinfo_with_returnvalue([Symbol("#self#"), :f, :_T, :throw_error], [:T], (:T,), :($matched_method))
+        ci.edges = _method_table_all_edges_all_methods(f, T, world)
         return ci
     end
 end
