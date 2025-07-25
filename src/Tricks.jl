@@ -96,13 +96,13 @@ else
 end
 
 function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counter())
-    mt = f.name.mt
-
     # We add an edge to the MethodTable itself so that when any new methods
     # are defined, it recompiles the function.
     @static if VERSION < v"1.12.0-DEV.1531"
+        mt = f.name.mt
         mt_edges = Core.Compiler.vect(mt, Tuple{f,Vararg{Any}})
     else
+        mt = Core.GlobalMethods
         mt_edges = Core.Compiler.vect(Tuple{f, Vararg{Any}}, mt)
     end
 
@@ -171,7 +171,7 @@ function _methods(@nospecialize(f_type), @nospecialize(t_type),
     else
         ms = Base.Method[_get_method(m) for m in mft if (mod === nothing || m.method.module ∈ mod)]
     end
-    return Base.MethodList(ms, f_type.name.mt)
+    return Base.MethodList(ms, f_type.name)
 end
 
 # Like Core.Compiler.method_instances, but accepts f as a _type_ instead of an instance.
