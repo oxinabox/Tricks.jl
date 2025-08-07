@@ -102,7 +102,7 @@ function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counte
         mt = f.name.mt
         mt_edges = Core.Compiler.vect(mt, Tuple{f,Vararg{Any}})
     else
-        mt = Core.GlobalMethods
+        mt = Core.methodtable
         mt_edges = Core.Compiler.vect(Tuple{f, Vararg{Any}}, mt)
     end
 
