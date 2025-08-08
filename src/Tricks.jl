@@ -102,7 +102,7 @@ function _method_table_all_edges_all_methods(f, T, world = Base.get_world_counte
         mt = f.name.mt
         mt_edges = Core.Compiler.vect(mt, Tuple{f,Vararg{Any}})
     else
-        mt = Core.methodtable
+        mt = isdefined(Core, :methodtable) ? Core.methodtable : Core.GlobalMethods  # was called this in 1.12 pre 1.12-rc2
         mt_edges = Core.Compiler.vect(Tuple{f, Vararg{Any}}, mt)
     end
 
