@@ -59,7 +59,11 @@ function create_codeinfo_with_returnvalue(argnames, spnames, sp, value)
     if spnames !== nothing
         expr = Expr(Symbol("with-static-parameters"), expr, spnames...)
     end
-    ci = ccall(:jl_expand, Any, (Any, Any), expr, @__MODULE__)
+    @static if VERSION >= v"1.13.0-DEV"
+        ci = Meta.lower(@__MODULE__, expr)
+    else
+        ci = ccall(:jl_expand, Any, (Any, Any), expr, @__MODULE__)
+    end
     return ci
 end
 
